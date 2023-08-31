@@ -2,7 +2,7 @@
 #include<algorithm>
 #include<vector>
 using namespace std;
-enum Genre {unknown,fiction, nonfiction ,periodical, biography, children};
+enum Genre {fiction, nonfiction ,periodical, biography, children};
 class Book
 {
 private:
@@ -13,13 +13,14 @@ private:
     bool Checked_out;
     Genre Genre_of_book;
 public:
-    //Default constructor
-    Book();            
-
     //Parameterized constructor
-    Book ( const string& ISBN, const string& Name , const string& get_Author ,
-     const int& get_copyright_Date , const Genre genre_of_book , 
-     const bool& checked_out=false );
+    Book ( const string& ISBN="--NONE--", const string& Name="--NO NAME--" ,
+     const string& get_Author="--NOT YET KNOWN--",
+     const int& get_copyright_Date=0 , const Genre genre_of_book=children, 
+     const bool& checked_out=false )
+      :ISBN(ISBN),Title(Name),Author(get_Author),Copyright_date(get_copyright_Date),
+      Genre_of_book(genre_of_book),Checked_out(checked_out)
+{}
 
     //Copy constructor
     Book ( const Book& book_p);
@@ -61,12 +62,33 @@ public:
  ostream& operator<< (ostream& et, const Book& bn)
  {
      et<<"\nISBN: "<<bn.ISBN;
-     et<<"\nTitle  "<<bn.Title;
-     et<<"\nAuthor"<<bn.Author;
-     et<<"\nGenre "<<bn.Genre_of_book;
-     return et;
- }
-
+     et<<"\nTitle: "<<bn.Title;
+     et<<"\nAuthor: "<<bn.Author;
+     et<<"\nGenre: ";
+    switch (bn.Genre_of_book)
+    {
+        case 0:
+            et<<"Fiction";
+            break;
+        case 1:
+            et<<"Nonfiction";
+            break;
+        case 2:
+            et<<"periodical";
+            break;
+        case 3:
+            et<<"biography";
+            break;
+        case 4:
+            et<<"Children";
+            break;
+        default:
+            break;
+    }
+    et<<"\n";
+    
+    return et;
+}
 //Defining getter functions
 string Book:: get_name () const
 {
@@ -92,25 +114,6 @@ Genre Book :: get_genre_of_book () const
 {
     return Genre_of_book;
 }
-
-//defining default constructor
-Book::Book()
-{
-    ISBN="--NONE--";
-    Title="--NO NAME--";
-    Author="--NOT YET KNOWN--";
-    Copyright_date=NULL;
-    Checked_out=false;
-    Genre_of_book=unknown;
-}
-
-//defining parameterized constructer
-Book::Book ( const string& ISBN, const string& Name , const string& get_Author ,
- const int& get_copyright_Date , const Genre genre_of_book , 
- const bool& checked_out)
- :ISBN(ISBN),Title(Name),Author(get_Author),Copyright_date(get_copyright_Date),
- Genre_of_book(genre_of_book),Checked_out(checked_out)
-{}
 
 //defining copy constructor
 Book::Book(const Book& book_n) 
@@ -160,6 +163,12 @@ public:
     bool patron_owes_fees () const;//Checking if a patron owes fees
     void set_fees (const int& fees);//Fees setter
 
+    //overloading == operator so as to be able to compare patrons while checking out book
+    bool operator==(const Patron& other) const {
+    return (username == other.username && card_number == other.card_number);
+}
+
+
 };
 
 //Defining Other methods
@@ -194,10 +203,10 @@ private:
   Book book;
   Patron patron;
   string activity;
-  int date;
+  string Date;
 public:
-    Transaction(const Book& b,const Patron& p,const string& act)
-    : book(b),patron(p),activity(act) {}
+    Transaction(const Book& b,const Patron& p,const string& act, const string& date)
+    : book(b),patron(p),activity(act), Date(date) {}
 };
 
 
@@ -211,8 +220,8 @@ private:
 public:
 void addbook(const Book& book);
 void addpatron(const Patron& patron);
-void Check_out_book (Book& book, const Patron& patron);
-vector<Patron> users_owes_fees() const;
+void Check_out_book (Book& book, const Patron& patron, const string& date);
+vector<Patron> users_who_owe_fees() const;
 };
 // function to add book
 
@@ -226,9 +235,9 @@ void Library :: addpatron(const Patron& patron)
 }
 // function to check out book
 
-void Library :: Check_out_book(Book& book, const Patron& ptrn)
+void Library :: Check_out_book(Book& book, const Patron& ptrn , const string& date)
 {
-    if ((find(books.begin(),books.end(),book)==books.end()) && (find(patrons.begin(),patrons.end(),ptrn)==patrons.end()))
+    if ((find(books.begin(),books.end(),book)==books.end()) || (find(patrons.begin(),patrons.end(),ptrn)==patrons.end()))
     {
         cout<<"\n\n!ERROR   Either book or patron is not registered\n";
         return;
@@ -240,11 +249,12 @@ void Library :: Check_out_book(Book& book, const Patron& ptrn)
     }
     
     book.Check_book_out();
-    transactions.push_back();
+    transactions.push_back(Transaction(book,ptrn,"check out",date));
+    cout<<"\nChecking book out successful";
 }
 
 //Creating vector of users who owes fees
-vector<Patron> Library:: users_owes_fees() const
+vector<Patron> Library:: users_who_owe_fees() const
 {
     vector<Patron> Them;
     for (Patron User : patrons)
@@ -257,36 +267,38 @@ vector<Patron> Library:: users_owes_fees() const
     return Them;
 }
 
-int main ()
-{
-       vector<Patron> users_owes_fees();
-};
-
 int main() {
-    Library library;
+    Library Progaramming_library;
 
-    // Adding books and patrons to the library
-    Book book1("123456", "Sample Book 1", "Author 1", 2023, fiction, false);
-    Book book2("789012", "Sample Book 2", "Author 2", 2021, nonfiction, false);
-    Patron patron1{"User1", "Card001", 0};
-    Patron patron2{"User2", "Card002", 10};
+    Book programming_1("12345", "Progammers' mind", "Mbaduko", 2021, nonfiction);
+    Book programming_2("12346", "Advanced c++ programming", "Emmanuel", 2021, nonfiction);
+    Book programming_3("12347", "Python for beginner", "Dr claude", 2002, nonfiction);
+    Book story_1("a12734_c1", "Programmed man", "Mr Eaggle",1998, fiction,true);
+    Book story_2 ("S23_F4265352", "Progarmmer mom", "Pascal", 2023, children);
 
-    library.addbook(book1);
-    library.addbook(book2);
-    library.addpatron(patron1);
-    library.addpatron(patron2);
+    //Displaying a book
+    cout<<story_1<<"\n\n\n";
 
-    // Checking out books
-    library.Check_out_book(book1, patron1);
-    library.Check_out_book(book2, patron2);
+    //Inserting book in the library
+    Progaramming_library.addbook(programming_1);
+    Progaramming_library.addbook(programming_2);
+    Progaramming_library.addbook(programming_3);
+    Progaramming_library.addbook(story_2);
 
-    // Displaying users who owe fees
-    vector<Patron> owingPatrons = library.users_owes_fees();
-    cout << "Users who owe fees:\n";
-    for (const Patron& patron : owingPatrons) {
-        cout << patron.traverse_p_name() << " (" << patron.traverse_p_card_number() << ")\n";
-    }
+    Patron p_1 ("Edson", "3001", 70098);
+    Patron p_2 ("Peter", "895753");
+    Patron p_3 ("John", "977");
 
+    //Inserting patrons to library
+    Progaramming_library.addpatron(p_1);
+    Progaramming_library.addpatron(p_2);
+    
+    // ....Checking book out... 
+    //Trying it with not registered user
+    Progaramming_library.Check_out_book(programming_1, p_3, "1/1/2023");
+    //Trying it with user who owe fees
+    Progaramming_library.Check_out_book(story_2, p_1, "1/1/2020");
+    //Successful action
+    Progaramming_library.Check_out_book(programming_2, p_2,"1/1/20290");
     return 0;
-
 }
